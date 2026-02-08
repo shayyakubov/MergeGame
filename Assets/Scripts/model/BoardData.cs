@@ -7,6 +7,20 @@ namespace Game.Model
         Merged = 2
     }
 
+    public struct GeneratorActivationResult
+    {
+        public Position SpawnPosition { get; }
+        public TileDefinition OutputDefinition { get; }
+        public int EvolutionIndex { get; }
+
+        public GeneratorActivationResult(Position spawnPosition, TileDefinition outputDefinition, int evolutionIndex)
+        {
+            SpawnPosition = spawnPosition;
+            OutputDefinition = outputDefinition;
+            EvolutionIndex = evolutionIndex;
+        }
+    }
+
     public class BoardData
     {
         public readonly int Columns;
@@ -47,60 +61,123 @@ namespace Game.Model
             grid[position.Column, position.Row] = null;
         }
 
-        public DropResult ApplyDrop(Position from, Position destination)
+        public DropResult ApplyDrop(Position origin, Position destination)
         {
-            if (!IsInside(from) || !IsInside(destination))
+            if (!IsInside(origin) || !IsInside(destination))
             {
                 return DropResult.Rejected;
             }
 
-            if (from == destination)
+            if (origin.Column == destination.Column && origin.Row == destination.Row)
             {
                 return DropResult.Rejected;
             }
 
-            TileData fromTile = GetTile(from);
-            if (fromTile == null)
+            TileData originTile = GetTile(origin);
+            if (originTile == null)
             {
                 return DropResult.Rejected;
             }
 
             if (IsEmpty(destination))
             {
-                SetTile(destination, fromTile);
-                ClearTile(from);
+                grid[destination.Column, destination.Row] = originTile;
+                grid[origin.Column, origin.Row] = null;
                 return DropResult.Moved;
             }
 
-            TileData toTile = GetTile(destination);
-
-            if (fromTile.IsGenerator || toTile.IsGenerator)
+            TileData destinationTile = GetTile(destination);
+            if (destinationTile == null)
             {
                 return DropResult.Rejected;
             }
 
-            if (fromTile.Definition == null || toTile.Definition == null)
+            if (originTile.IsGenerator || destinationTile.IsGenerator)
             {
                 return DropResult.Rejected;
             }
 
-            if (fromTile.Definition != toTile.Definition)
+            if (originTile.Definition == null || destinationTile.Definition == null)
             {
                 return DropResult.Rejected;
             }
 
-            if (fromTile.EvolutionIndex != toTile.EvolutionIndex)
+            if (originTile.Definition != destinationTile.Definition)
             {
                 return DropResult.Rejected;
             }
 
-            if (!toTile.TryEvolve())
+            if (originTile.EvolutionIndex != destinationTile.EvolutionIndex)
             {
                 return DropResult.Rejected;
             }
 
-            ClearTile(from);
+            if (!destinationTile.TryEvolve())
+            {
+                return DropResult.Rejected;
+            }
+
+            grid[origin.Column, origin.Row] = null;
             return DropResult.Merged;
+        }
+
+        public bool TryActivateGenerator(Position generatorPosition, out GeneratorActivationResult result)
+        {
+            result = default;
+
+            if (!IsInside(generatorPosition))
+            {
+                return false;
+            }
+
+            TileData generatorTile = GetTile(generatorPosition);
+            if (generatorTile == null)
+            {
+                return false;
+            }
+
+            if (generatorTile.Definition == null || !generatorTile.Definition.IsGenerator)
+            {
+                return false;
+            }
+
+            TileDefinition outputDefinition = generatorTile.Definition.GeneratedOutputDefinition;
+            if (outputDefinition == null)
+            {
+                return false;
+            }
+
+            Position spawnPosition;
+            bool hasEmptySlot = TryFindFirstEmptySlot(out spawnPosition);
+            if (!hasEmptySlot)
+            {
+                return false;
+            }
+
+            int evolutionIndex = 0;
+
+            SetTile(spawnPosition, new TileData(outputDefinition, evolutionIndex));
+            result = new GeneratorActivationResult(spawnPosition, outputDefinition, evolutionIndex);
+            return true;
+        }
+
+        private bool TryFindFirstEmptySlot(out Position position)
+        {
+            for (int row = 0; row < Rows; row++)
+            {
+                for (int column = 0; column < Columns; column++)
+                {
+                    Position candidate = new Position(column, row);
+                    if (IsEmpty(candidate))
+                    {
+                        position = candidate;
+                        return true;
+                    }
+                }
+            }
+
+            position = new Position(0, 0);
+            return false;
         }
     }
 }

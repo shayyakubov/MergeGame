@@ -161,68 +161,31 @@ namespace Game.Controller
                 return;
             }
 
-            TileData generatorData = boardData.GetTile(generatorPosition);
-            if (generatorData == null)
+            GeneratorActivationResult activationResult;
+            bool activated = boardData.TryActivateGenerator(generatorPosition, out activationResult);
+            if (!activated)
             {
                 return;
             }
 
-            if (generatorData.Definition == null || !generatorData.Definition.IsGenerator)
-            {
-                return;
-            }
+            Position spawnPosition = activationResult.SpawnPosition;
+            TileDefinition outputDefinition = activationResult.OutputDefinition;
+            int evolutionIndex = activationResult.EvolutionIndex;
 
-            TileDefinition outputDefinition = generatorData.Definition.GeneratedOutputDefinition;
-            if (outputDefinition == null)
-            {
-                return;
-            }
+            Tile spawnedTile = CreateTileView(spawnPosition, outputDefinition, evolutionIndex);
 
-            Position emptyPosition;
-            bool found = TryFindFirstEmptySlot(out emptyPosition);
-            if (!found)
-            {
-                return;
-            }
+            Transform destinationSlot = slots[spawnPosition.Column, spawnPosition.Row].transform;
 
-            boardData.SetTile(emptyPosition, new TileData(outputDefinition, 0));
-
-            Tile spawnedTile = CreateTileView(emptyPosition, outputDefinition, 0);
-
-            Transform destinationSlot = slots[emptyPosition.Column, emptyPosition.Row].transform;
-
-            Vector3 from = clickedTile.transform.position;
+            Vector3 origin = clickedTile.transform.position;
             Vector3 destination = destinationSlot.position;
 
             SetDraggingLocked(true);
 
-            spawnedTile.PlayFlyAnimation(from, destination, GeneratorFlyDurationSeconds, () =>
+            spawnedTile.PlayFlyAnimation(origin, destination, GeneratorFlyDurationSeconds, () =>
             {
                 spawnedTile.AttachTo(destinationSlot);
-                
-                // TODO: if there is another spawn in progress during the end of this one
-                // this may disable the lock and allow tiles movement [bug :( ]
                 SetDraggingLocked(false);
             });
-        }
-
-        private bool TryFindFirstEmptySlot(out Position position)
-        {
-            for (int row = 0; row < rows; row++)
-            {
-                for (int column = 0; column < columns; column++)
-                {
-                    Position candidate = new Position(column, row);
-                    if (boardData.IsEmpty(candidate))
-                    {
-                        position = candidate;
-                        return true;
-                    }
-                }
-            }
-
-            position = new Position(0, 0);
-            return false;
         }
 
         private void HandleTileDropped(Tile draggedTile, PointerEventData eventData)
@@ -253,18 +216,18 @@ namespace Game.Controller
                 return;
             }
 
-            Position destination = targetSlot.Position;
+            Position to = targetSlot.Position;
 
-            DropResult result = boardData.ApplyDrop(from, destination);
+            DropResult result = boardData.ApplyDrop(from, to);
 
             if (result == DropResult.Moved)
             {
                 tilesByPosition.Remove(from);
-                tilesByPosition[destination] = draggedTile;
+                tilesByPosition[to] = draggedTile;
 
-                positionByTile[draggedTile] = destination;
+                positionByTile[draggedTile] = to;
 
-                draggedTile.AttachTo(slots[destination.Column, destination.Row].transform);
+                draggedTile.AttachTo(slots[to.Column, to.Row].transform);
                 return;
             }
 
@@ -272,8 +235,8 @@ namespace Game.Controller
             {
                 RemoveTileView(draggedTile);
 
-                TileData targetData = boardData.GetTile(destination);
-                if (targetData != null && tilesByPosition.TryGetValue(destination, out Tile targetTile) && targetTile != null)
+                TileData targetData = boardData.GetTile(to);
+                if (targetData != null && tilesByPosition.TryGetValue(to, out Tile targetTile) && targetTile != null)
                 {
                     targetTile.SetSprite(targetData.Definition.GetSprite(targetData.EvolutionIndex));
                 }
