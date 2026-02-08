@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a476b1ff1cdf468cb73be13629758842, type: 3}
+  m_Name: CrystalTiles
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Model.TileDefinition
+  evolutions:
+  - {fileID: -855298285791758126, guid: c40f1dd25c8ce0d4387c99fec016587d, type: 3}
+  - {fileID: 6937817954938267909, guid: 3f95fec89c6c84d4c9e4fb4c7733226b, type: 3}
+  - {fileID: -6470460504253458178, guid: a427e8412010e69439545a58bb61a7b0, type: 3}
+  - {fileID: -4178046375966092550, guid: 79b0e9c7be37c624e8ba883cc6a435b5, type: 3}
+  - {fileID: 4130640169021434097, guid: 828cc2fb4ad7a83419db937cf1e4c62a, type: 3}
