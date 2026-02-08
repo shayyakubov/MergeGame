@@ -1,4 +1,3 @@
-// Assets/Scripts/Model/TileDefinition.cs
 using UnityEngine;
 
 namespace Game.Model

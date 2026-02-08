@@ -47,14 +47,14 @@ namespace Game.Model
             grid[position.Column, position.Row] = null;
         }
 
-        public DropResult ApplyDrop(Position from, Position to)
+        public DropResult ApplyDrop(Position from, Position destination)
         {
-            if (!IsInside(from) || !IsInside(to))
+            if (!IsInside(from) || !IsInside(destination))
             {
                 return DropResult.Rejected;
             }
 
-            if (from == to)
+            if (from == destination)
             {
                 return DropResult.Rejected;
             }
@@ -65,14 +65,14 @@ namespace Game.Model
                 return DropResult.Rejected;
             }
 
-            if (IsEmpty(to))
+            if (IsEmpty(destination))
             {
-                grid[to.Column, to.Row] = fromTile;
-                grid[from.Column, from.Row] = null;
+                SetTile(destination, fromTile);
+                ClearTile(from);
                 return DropResult.Moved;
             }
 
-            TileData toTile = GetTile(to);
+            TileData toTile = GetTile(destination);
 
             if (fromTile.IsGenerator || toTile.IsGenerator)
             {
@@ -99,7 +99,7 @@ namespace Game.Model
                 return DropResult.Rejected;
             }
 
-            grid[from.Column, from.Row] = null;
+            ClearTile(from);
             return DropResult.Merged;
         }
     }

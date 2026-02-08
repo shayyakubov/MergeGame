@@ -29,11 +29,7 @@ namespace Game.Controller
 
         private bool isDraggingLocked;
 
-        public BoardController(
-            BoardData boardData,
-            Board boardView,
-            GameObject slotPrefab,
-            GameObject tilePrefab)
+        public BoardController(BoardData boardData, Board boardView, GameObject slotPrefab, GameObject tilePrefab)
         {
             this.boardData = boardData;
             this.boardView = boardView;
@@ -189,7 +185,6 @@ namespace Game.Controller
                 return;
             }
 
-            // reserve logical state immediately
             boardData.SetTile(emptyPosition, new TileData(outputDefinition, 0));
 
             Tile spawnedTile = CreateTileView(emptyPosition, outputDefinition, 0);
@@ -197,14 +192,16 @@ namespace Game.Controller
             Transform destinationSlot = slots[emptyPosition.Column, emptyPosition.Row].transform;
 
             Vector3 from = clickedTile.transform.position;
-            Vector3 to = destinationSlot.position;
+            Vector3 destination = destinationSlot.position;
 
-            // fix #3: disable dragging during flight
             SetDraggingLocked(true);
 
-            spawnedTile.PlayFlyAnimation(from, to, GeneratorFlyDurationSeconds, () =>
+            spawnedTile.PlayFlyAnimation(from, destination, GeneratorFlyDurationSeconds, () =>
             {
                 spawnedTile.AttachTo(destinationSlot);
+                
+                // TODO: if there is another spawn in progress during the end of this one
+                // this may disable the lock and allow tiles movement [bug :( ]
                 SetDraggingLocked(false);
             });
         }
@@ -256,18 +253,18 @@ namespace Game.Controller
                 return;
             }
 
-            Position to = targetSlot.Position;
+            Position destination = targetSlot.Position;
 
-            DropResult result = boardData.ApplyDrop(from, to);
+            DropResult result = boardData.ApplyDrop(from, destination);
 
             if (result == DropResult.Moved)
             {
                 tilesByPosition.Remove(from);
-                tilesByPosition[to] = draggedTile;
+                tilesByPosition[destination] = draggedTile;
 
-                positionByTile[draggedTile] = to;
+                positionByTile[draggedTile] = destination;
 
-                draggedTile.AttachTo(slots[to.Column, to.Row].transform);
+                draggedTile.AttachTo(slots[destination.Column, destination.Row].transform);
                 return;
             }
 
@@ -275,8 +272,8 @@ namespace Game.Controller
             {
                 RemoveTileView(draggedTile);
 
-                TileData targetData = boardData.GetTile(to);
-                if (targetData != null && tilesByPosition.TryGetValue(to, out Tile targetTile) && targetTile != null)
+                TileData targetData = boardData.GetTile(destination);
+                if (targetData != null && tilesByPosition.TryGetValue(destination, out Tile targetTile) && targetTile != null)
                 {
                     targetTile.SetSprite(targetData.Definition.GetSprite(targetData.EvolutionIndex));
                 }
